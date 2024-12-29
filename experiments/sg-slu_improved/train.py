@@ -4,6 +4,10 @@ import logging
 import sys
 import tensorflow as tf
 import numpy as np
+from tensorflow.contrib import crf  # TF 1.x için CRF
+from utils import createVocabulary, loadVocabulary, DataProcessor
+import classification_report, confusion_matrix, ConfusionMatrixDisplay, precision_recall_curve
+import matplotlib.pyplot as plt
 
 # Make sure you're on TensorFlow 1.9 for this code.
 # pip install tensorflow==1.9.0
@@ -472,4 +476,26 @@ logging.info("Training Completed.")
 # -----------------------------------------
 # Print the final test accuracy at the end
 # -----------------------------------------
+
 print("Final Test Intent Accuracy: {:.2f}".format(final_test_acc))
+
+
+
+output_dir = "./output_plots"
+os.makedirs(output_dir, exist_ok=True)  
+
+
+report = classification_report(correct_intents, pred_intents, target_names=intent_vocab['vocab'])
+
+with open(os.path.join(output_dir, "classification_report.txt"), "w") as f:
+    f.write("Classification Report:\n")
+    f.write(report)
+
+
+conf_matrix = confusion_matrix(correct_intents, pred_intents)
+disp = ConfusionMatrixDisplay(conf_matrix, display_labels=intent_vocab['vocab'])
+disp.plot(cmap='Blues', xticks_rotation='vertical')
+plt.title("Confusion Matrix")
+
+plt.savefig(os.path.join(output_dir, "confusion_matrix.png"))
+plt.close()  
