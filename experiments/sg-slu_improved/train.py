@@ -6,8 +6,10 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.contrib import crf  # TF 1.x için CRF
 from utils import createVocabulary, loadVocabulary, DataProcessor
-import classification_report, confusion_matrix, ConfusionMatrixDisplay, precision_recall_curve
-import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay  
+import matplotlib.pyplot as plt  
+
+
 
 # Make sure you're on TensorFlow 1.9 for this code.
 # pip install tensorflow==1.9.0
