@@ -10,8 +10,8 @@ atis_flight_time
 atis_quantity
 atis_flight#atis_airfare
 atis_city
-atis_airport
 atis_distance
+atis_airport
 atis_capacity
 atis_ground_fare
 atis_flight_no

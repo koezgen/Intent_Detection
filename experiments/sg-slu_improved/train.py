@@ -5,7 +5,7 @@ import sys
 import tensorflow as tf
 import numpy as np
 from tensorflow.contrib import crf  # TF 1.x için CRF
-from utils import createVocabulary, loadVocabulary, DataProcessor
+from utils import createVocabulary, loadVocabulary, DataProcessor, compute_intent_metrics
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay  
 import matplotlib.pyplot as plt  
 
@@ -35,7 +35,7 @@ parser.add_argument("--no_early_stop", action='store_false', dest='early_stop',
 parser.add_argument("--patience", type=int, default=5, help="Patience before stopping.")
 
 # Multi-task weighting
-parser.add_argument("--slot_loss_weight", type=float, default=0.0, help="Alpha: how much slot loss contributes to total loss.")
+parser.add_argument("--slot_loss_weight", type=float, default=0.1, help="Alpha: how much slot loss contributes to total loss.")
 
 # Label smoothing
 parser.add_argument("--label_smoothing", type=float, default=0.1, help="Label smoothing for intent loss (0 = no smoothing).")
@@ -434,6 +434,21 @@ with tf.Session() as sess:
                 pred_intents_arr = np.array(pred_intents)
                 correct_intents_arr = np.array(correct_intents)
                 acc_intent = (pred_intents_arr == correct_intents_arr).mean() * 100.0
+                
+                test_metrics = compute_intent_metrics(correct_intents, pred_intents, intent_vocab)
+
+                # Log metrics
+                logging.info("Test Intent Metrics: Precision={:.2f}, Recall={:.2f}, F1={:.2f}".format(
+                test_metrics['precision'], test_metrics['recall'], test_metrics['f1_score']
+                ))
+                print(test_metrics["classification_report"])
+
+                id_to_intent = {v: k for k, v in intent_vocab['vocab'].items()}
+                
+                # (Optional) Display confusion matrix for the test set
+                display_labels = [id_to_intent[i] for i in sorted(set(correct_intents + pred_intents))]
+                ConfusionMatrixDisplay(confusion_matrix=test_metrics["confusion_matrix"], display_labels=display_labels).plot(cmap="Blues")
+                plt.show()
                 return acc_intent
 
             # Evaluate on validation
@@ -451,7 +466,7 @@ with tf.Session() as sess:
                 os.path.join(full_test_path, arg.intent_file)
             )
             logging.info("Test intent_acc={:.2f}".format(test_intent_acc))
-
+            
             # Keep track of the last test accuracy
             final_test_acc = test_intent_acc
 
@@ -480,24 +495,3 @@ logging.info("Training Completed.")
 # -----------------------------------------
 
 print("Final Test Intent Accuracy: {:.2f}".format(final_test_acc))
-
-
-
-output_dir = "./output_plots"
-os.makedirs(output_dir, exist_ok=True)  
-
-
-report = classification_report(correct_intents, pred_intents, target_names=intent_vocab['vocab'])
-
-with open(os.path.join(output_dir, "classification_report.txt"), "w") as f:
-    f.write("Classification Report:\n")
-    f.write(report)
-
-
-conf_matrix = confusion_matrix(correct_intents, pred_intents)
-disp = ConfusionMatrixDisplay(conf_matrix, display_labels=intent_vocab['vocab'])
-disp.plot(cmap='Blues', xticks_rotation='vertical')
-plt.title("Confusion Matrix")
-
-plt.savefig(os.path.join(output_dir, "confusion_matrix.png"))
-plt.close()  

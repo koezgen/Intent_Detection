@@ -126,6 +126,45 @@ def __splitTagType(tag):
         tagType = s[1]
     return tag, tagType
 
+from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
+
+def compute_intent_metrics(correct_intents, predicted_intents, intent_vocab):
+    """
+    Compute Precision, Recall, and F1 Score for predicted intents.
+    
+    Args:
+        correct_intents (list): Ground truth intents.
+        predicted_intents (list): Predicted intents.
+        intent_vocab (dict): Vocabulary mapping of intents to IDs.
+    
+    Returns:
+        dict: Dictionary containing precision, recall, F1 score, and a classification report.
+    """
+    # Convert intent IDs to intent names for better readability
+    id_to_intent = {v: k for k, v in intent_vocab['vocab'].items()}
+    correct_labels = [id_to_intent[i] for i in correct_intents]
+    predicted_labels = [id_to_intent[i] for i in predicted_intents]
+    
+    # Calculate metrics
+    precision = precision_score(correct_intents, predicted_intents, average="weighted") * 100
+    recall = recall_score(correct_intents, predicted_intents, average="weighted") * 100
+    f1 = f1_score(correct_intents, predicted_intents, average="weighted") * 100
+    
+    # Generate classification report
+    target_names = [id_to_intent[i] for i in sorted(set(correct_intents + predicted_intents))]
+    classification_report_str = classification_report(correct_intents, predicted_intents, target_names=target_names)
+    
+    # Confusion Matrix
+    cm = confusion_matrix(correct_intents, predicted_intents)
+    
+    return {
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "classification_report": classification_report_str,
+        "confusion_matrix": cm
+    }
+
 def computeF1Score(correct_slots, pred_slots):
     correctChunk = {}
     correctChunkCnt = 0

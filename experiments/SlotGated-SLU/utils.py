@@ -126,6 +126,67 @@ def __splitTagType(tag):
         tagType = s[1]
     return tag, tagType
 
+def computeIntentF1Score(correct_intents, pred_intents):
+    """
+    Computes macro-averaged F1 score for single-label intent classification.
+    
+    :param correct_intents: list or array of true (gold) intent indices
+    :param pred_intents: list or array of predicted intent indices
+    :return: (macro_f1, macro_precision, macro_recall)
+    """
+    assert len(correct_intents) == len(pred_intents), "Length mismatch between correct and predicted intents."
+
+    # Identify all unique labels (including those not seen in one of the sets)
+    unique_labels = set(list(correct_intents) + list(pred_intents))
+
+    f1_list = []
+    precision_list = []
+    recall_list = []
+
+    # For each label, compute TP, FP, FN
+    for label in unique_labels:
+        tp = 0  # predicted = label, actual = label
+        fp = 0  # predicted = label, actual != label
+        fn = 0  # predicted != label, actual = label
+
+        for c_intent, p_intent in zip(correct_intents, pred_intents):
+            if p_intent == label:
+                if c_intent == p_intent:
+                    tp += 1
+                else:
+                    fp += 1
+            elif c_intent == label:
+                fn += 1
+        
+        # Compute precision & recall for this label
+        if (tp + fp) == 0:
+            precision = 0.0
+        else:
+            precision = float(tp) / float(tp + fp)
+
+        if (tp + fn) == 0:
+            recall = 0.0
+        else:
+            recall = float(tp) / float(tp + fn)
+
+        # Compute F1 for this label
+        if (precision + recall) > 0:
+            f1 = 2.0 * precision * recall / (precision + recall)
+        else:
+            f1 = 0.0
+
+        f1_list.append(f1)
+        precision_list.append(precision)
+        recall_list.append(recall)
+
+    # Macro average
+    macro_f1 = sum(f1_list) / len(f1_list)
+    macro_precision = sum(precision_list) / len(precision_list)
+    macro_recall = sum(recall_list) / len(recall_list)
+
+    return macro_f1, macro_precision, macro_recall
+
+
 def computeF1Score(correct_slots, pred_slots):
     correctChunk = {}
     correctChunkCnt = 0
